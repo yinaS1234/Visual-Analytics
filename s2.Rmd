@@ -1,0 +1,240 @@
+---
+title: "Data 608 Story 2-Yina Qiao"
+output:
+  html_document:
+    df_print: paged
+---
+
+Can the FED Control Inflation and Maintain Full Employment? 
+Has the FED been able to fulfill the mandate given to it by Congress?
+
+# Data Collection/Preprocessing
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(scales)
+library(tidyr)
+```
+
+
+```{r, eval=FALSE}
+# Fetching the FED Funds Rate from FRED API
+
+fred_response <- GET(
+  "https://api.stlouisfed.org/fred/series/observations",
+  query = list(
+    series_id = 'FEDFUNDS',
+    api_key = '*',
+    file_type = 'json',
+    frequency = 'm',
+    observation_start = '1999-02-15',
+    observation_end = '2024-02-15'
+  )
+)
+
+# Parse the data
+fred_data <- content(fred_response, "text")
+fred_data <- fromJSON(fred_data)
+
+# Create data frame for FFR
+ffr_df <- data.frame(
+  Date = as.Date(paste0(substr(fred_data$observations$date, 1, 7), "-01")),
+  FedFundsRate = as.numeric(fred_data$observations$value)
+)
+
+# Convert Date to "YYYY-MM" format for consistency with your requirements
+ffr_df$Date <- format(ffr_df$Date, "%Y-%m")
+# BLS API Key
+bls_api_key <- "*"
+
+# Function to perform API request, process the response, and create a dataframe
+get_df <- function(series_id, start_year, end_year) {
+  response <- GET(paste0("https://api.bls.gov/publicAPI/v2/timeseries/data/", series_id),
+                  query = list(
+                    registrationkey = bls_api_key,
+                    startyear = as.character(start_year),
+                    endyear = as.character(end_year)
+                  ))
+  data <- fromJSON(content(response, "text"), flatten = TRUE)$Results$series$data[[1]]
+  data$Date <- paste0(data$year, "-", sub("M", "", data$period))
+  
+
+  column_name <- ifelse(grepl("LNS14000000", series_id), "UnemploymentRate", "CPI")
+  
+  df <- setNames(data.frame(
+    Date = data$Date,
+    Value = as.numeric(data$value)
+  ), c("Date", column_name))
+  
+  return(df)
+}
+
+# API calls for CPI data
+cpi_df1 <- get_df("CUUR0000SA0L1E", 1999, 2018)
+cpi_df2 <- get_df("CUUR0000SA0L1E", 2019, 2024)
+
+# Combine and sort the CPI data frames
+cpi_df <- rbind(cpi_df1, cpi_df2)
+cpi_df$Date <- as.Date(paste0(cpi_df$Date, "-01"))
+cpi_df <- cpi_df[order(cpi_df$Date), ]
+cpi_df$Date <- format(cpi_df$Date, "%Y-%m")
+
+# API calls for Unemployment data
+unemp_df1 <- get_df("LNS14000000", 1999, 2018)
+unemp_df2 <- get_df("LNS14000000", 2019, 2024)
+
+# Combine and sort the Unemployment data frames
+unemployment_df <- rbind(unemp_df1, unemp_df2)
+unemployment_df$Date <- as.Date(paste0(unemployment_df$Date, "-01"))
+unemployment_df <- unemployment_df[order(unemployment_df$Date), ]
+unemployment_df$Date <- format(unemployment_df$Date, "%Y-%m")
+
+cpi_df$CPI <- as.numeric(cpi_df$CPI)
+# Calculate the inflation rate y-o-y
+cpi_df <- cpi_df %>%
+  mutate(
+    inflation = (CPI - lag(CPI,12)) / lag(CPI,12) * 100
+  )
+
+
+cpi_df$inflation[is.na(cpi_df$inflation)] <- 0
+
+# Merging the dataframes on the 'Date' column
+merged_df <- reduce(list(ffr_df, cpi_df, unemployment_df), function(x, y) merge(x, y, by = "Date", all = TRUE))
+
+# Filtering the dataframe to include only dates from 1999-02 to 2024-01
+master_df <- merged_df %>%
+  filter(Date >= "1999-02" & Date <= "2024-01")
+tail(master_df)
+```
+
+```{r}
+if (file.exists("master_df_cache.rds")) {
+  master_df <- readRDS("master_df_cache.rds")
+} else {
+  saveRDS(master_df, "master_df_cache.rds")
+}
+
+```
+
+
+# Overview of Economic Indicators
+
+```{r,fig.width=10, fig.height=8}
+
+
+master_df$Date <- as.Date(paste0(master_df$Date, "-01"))
+
+
+long_df <- pivot_longer(master_df, cols = c(FedFundsRate, inflation, UnemploymentRate),
+                        names_to = "Indicator", values_to = "Value")
+
+# Define a data frame for the economic events
+events_df <- data.frame(
+  xmin = as.Date(c("1999-01-01", "2001-01-01", "2007-01-01", "2020-01-01")),
+  xmax = as.Date(c("2000-12-31", "2001-12-31", "2009-12-31", "2021-12-31")),
+  Event = c("Dot-com Bubble", "9/11 Attacks", "Global Financial Crisis", "COVID-19 Pandemic"),
+  fill = c("blue", "orange", "red", "purple")
+)
+
+# Create the plots with separate facets for each indicator
+p <- ggplot() +
+  geom_line(data = long_df, aes(x = Date, y = Value, colour = Indicator), size=1) +
+  scale_colour_manual(values = c("FedFundsRate" = "green", "inflation" = "blue", "UnemploymentRate" = "red"), guide = FALSE) +
+  facet_wrap(~Indicator, scales = "free_y", ncol = 1) +
+  
+  # Add rectangles for major economic events using geom_rect
+  geom_rect(data = events_df, aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Event), alpha = 0.18) +
+  scale_fill_manual(values = c("Dot-com Bubble" = "blue", "9/11 Attacks" = "orange", "Global Financial Crisis" = "red", "COVID-19 Pandemic" = "purple")) +
+  
+  theme_minimal() +
+  theme(legend.position = "right",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        legend.background = element_rect(fill = "white"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title=element_text(hjust=0.5, face='bold'))+
+  labs(x = "", y = "Rate %", title = "     Economic Indicators Over Time (1999-2024)") +
+  scale_x_date(date_labels = "%Y", date_breaks = "2 years") +
+  guides(fill = guide_legend(title = "Major Economic Events")) # Set the title for the fill legend
+
+# Print the plot
+p
+
+```
+
+# Closely Examine
+
+```{r,fig.width=10, fig.height=7}
+
+master_df$Date <- as.Date(master_df$Date, format = "%Y-%m")
+
+# Calculate correlations
+corr_unemployment <- cor(master_df$UnemploymentRate, master_df$FedFundsRate, use = "complete.obs")
+
+# Plot
+ggplot(data = master_df, aes(x = Date)) +
+  geom_line(aes(y = UnemploymentRate, colour = "Unemployment Rate"), size = 1) +  
+  geom_line(aes(y = FedFundsRate, colour = "Fed Funds Rate"), size = 1) + 
+  scale_colour_manual(values = c("Unemployment Rate" = "red", "Fed Funds Rate" = "green")) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",  
+    legend.title = element_blank(),  
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold", size=16)
+  ) +
+  labs(
+    y = " ",
+    title = "     Unemployment and Fed Funds Rate over the Last 25 years"
+  ) +
+  annotate("text", x = min(master_df$Date), y = max(master_df$FedFundsRate, na.rm = TRUE), label = paste("Correlation: ", round(corr_unemployment, 2)), hjust = 0, vjust = -6, size = 6, face='bold', colour = "black") + # Add correlation text to the plot
+  scale_y_continuous(labels = percent_format(scale = 1)) +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") + 
+  guides(colour = guide_legend(title = "Legend")) 
+
+```
+
+```{r, fig.width=10, fig.height=7}
+
+
+master_df$Date <- as.Date(master_df$Date, format = "%Y-%m")
+
+# Calculate correlations
+corr_inflation <- cor(master_df$inflation, master_df$FedFundsRate, use = "complete.obs")
+
+# Plot
+ggplot(data = master_df, aes(x = Date)) +
+  geom_line(aes(y = inflation, colour = "Inflation Rate"), size = 1) +  # Increase line size
+  geom_line(aes(y = FedFundsRate, colour = "Fed Funds Rate"), size = 1) +  # Increase line size
+  scale_colour_manual(values = c("Inflation Rate" = "blue", "Fed Funds Rate" = "green")) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",  # Adjust legend position back to bottom
+    legend.title = element_blank(),  # Remove legend title
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold", size=16)
+  ) +
+  labs(
+    y = "",
+    title = "     Inflation and Fed Funds Rate over the Last 25 years"
+  ) +
+  annotate("text", x = min(master_df$Date), y = max(master_df$FedFundsRate, na.rm = TRUE), label = paste("Correlation: ", round(corr_inflation, 2)), hjust = 0, vjust = 0, size = 6, face='bold', colour = "black") + # Add correlation text to the plot
+  scale_y_continuous(labels = percent_format(scale = 1)) +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") + # Adjust date breaks and labels
+  guides(colour = guide_legend(title = "Legend"))  # Add legend title back
+```
+
+
