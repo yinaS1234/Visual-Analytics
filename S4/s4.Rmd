@@ -1,0 +1,220 @@
+---
+title: "DATA 608 Story - 4 : How much do we get paid?"
+author: "Yina Qiao"
+
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+# Instruction
+I have introduced the term “Data Practitioner” as a generic job descriptor because we have so many different job role titles for individuals whose work activities overlap including Data Scientist, Data Engineer, Data Analyst, Business Analyst, Data Architect, etc.
+
+For this story we will answer the question, “How much do we get paid?” Your analysis and data visualizations must address the variation in average salary based on role descriptor and state.
+
+Used dataset provided from U.S. Bureau of Labor Statics and hosted on github
+* https://data.bls.gov/oes/#/home
+
+# Data Prep
+
+Salary data -Data Scientist, Computer Programmer, Database Architects,
+Database Administrators,Management Analysts are extracted and loaded for this analysis. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(plotly)
+library(readr)
+library(ggplot2)
+library(scales)
+library(ggtext) 
+library(forcats)
+```
+
+```{r,results='hide',message=FALSE, warning=FALSE}
+# Define a vector with all US states and DC
+us_states <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", 
+               "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", 
+               "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", 
+               "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", 
+               "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", 
+               "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", 
+               "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", 
+               "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", 
+               "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", 
+               "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", 
+               "District of Columbia")
+
+# Function to load and clean a CSV file
+load_and_clean_csv <- function(url, filename_prefix) {
+  
+  data <- read_csv(url, skip = 6, col_names = c('State', paste0(filename_prefix, '_ann_mean_wage')))
+  
+  data <- data %>%
+    mutate(State = gsub('\\(.*\\)', '', State)) %>%
+    select(State, ends_with('ann_mean_wage')) %>%
+# Filter to include only US states and DC
+    filter(State %in% us_states)
+  return(data)
+}
+
+# Base URL for the CSV files
+base_url <- "https://raw.githubusercontent.com/yinaS1234/data-608/main/S4/"
+
+# Filenames without the .csv extension
+filenames <- c('cp', 'dba', 'dbad', 'ds', 'ma')
+
+# Load and clean each CSV file, saving them into separate dataframes
+for (filename in filenames) {
+  assign(filename, load_and_clean_csv(paste0(base_url, filename, '.csv'), filename))
+}
+
+
+print(cp, n=Inf)
+print(dba, n=Inf)
+print(dbad, n=Inf)
+print(ds, n=Inf)
+print(ma, n=Inf)
+
+combined_df <- ds %>% 
+  full_join(cp, by='State') %>% 
+  full_join(dba, by='State') %>%
+  full_join(dbad, by='State') %>%
+  full_join(ma, by='State')
+head(combined_df)
+summary(combined_df)
+# Define your mappings from abbreviation to full role names
+role_names <- c(ds_ann_mean_wage = "Data Scientists", 
+                cp_ann_mean_wage = "Computer Programmers", 
+                dba_ann_mean_wage = "Database Architects", 
+                dbad_ann_mean_wage = "Database Administrators", 
+                ma_ann_mean_wage = "Management Analysts")
+
+# Convert salary columns to numeric
+combined_df <- combined_df %>%
+  mutate(across(ends_with("ann_mean_wage"), ~ as.numeric(as.character(.))))
+
+# Reshape the data from wide to long format and map abbreviations to full names
+combined_df_long <- combined_df %>%
+  pivot_longer(
+    cols = -State, 
+    names_to = "Role", 
+    values_to = "Salary"
+  ) %>%
+  mutate(Role = role_names[Role])
+
+combined_df_long$Role <- factor(combined_df_long$Role, levels = c(
+  "Database Architects",  
+  "Data Scientists",
+  "Database Administrators",
+  "Management Analysts",
+  "Computer Programmers"
+  
+))
+print(combined_df_long, n=Inf)
+```
+
+
+
+# Data Visuals
+## Mean Wage Disparity by Role
+
+```{r,message=FALSE, warning=FALSE}
+ggplot(combined_df_long, aes(x = Role, y = Salary, fill = Role)) +
+  geom_boxplot(outlier.shape = NA) +
+  scale_y_continuous(labels = label_number(scale_cut = c(k = 1e3))) +
+  theme_minimal() +
+  labs(title ="<span style='font-size:20pt;'><b>Database</b></span><span style='font-size:20pt;'> Architects</span> <span style='font-size:20pt;'><b>Earn</b></span> the <span style='font-size:20pt;'><b>Most</b></span><br></br><br></br><b>           -------Followed by Data Scientists</b>", x = "", y = "") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face='bold', size=10),
+    legend.position = 'none',
+    plot.title = element_markdown(lineheight = 1.5),
+    panel.grid.major.x = element_blank(),  
+    panel.grid.minor.x = element_blank(),  
+    plot.margin = margin(0.2, 1, 0.5, 1, "cm")
+  )
+```
+
+## State-by-Role Salary Variations
+According to CompTIA's 2023 State of the Tech Workforce report, 
+Texas,California,Florida, Washington, New York  stand out as Top 5 states with tech-related job gain nationwide. 
+We will focus on those state for examining how location impacts salary scales within the tech sector.
+
+https://www.comptia.org/blog/where-are-tech-jobs-thriving-in-the-u.s-
+
+```{r}
+# Define top states and their abbreviations
+top_states <- c("California" = "CA", "Texas" = "TX", "New York" = "NY", 
+                "Florida" = "FL", "Washington" = "WA")
+
+# Prepare data, filtering and mutating in one step
+top_data <- combined_df_long %>%
+  filter(State %in% names(top_states)) %>%
+  mutate(State = top_states[State],
+         State = factor(State, levels = top_states),
+         Role = factor(Role, levels = c("Database Architects", "Data Scientists", 
+                                        "Computer Programmers", "Database Administrators", 
+                                        "Management Analysts"))) %>%
+  arrange(Role, desc(Salary))
+
+# Extract top 2 salaries for annotations
+top_salaries <- top_data %>%
+  group_by(Role) %>%
+  top_n(2, Salary) %>%
+  ungroup() %>%
+  mutate(SalaryFormatted = paste0(round(Salary / 1000, 0), "k"))
+
+# Create heatmap with reordered roles and states, and annotations
+heatmap_plot <- ggplot(top_data, aes(x = Role, y = State, fill = Salary)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lavender", high = "blue", 
+                      breaks = range(top_data$Salary), labels = c("Lowest", "Highest"),
+                      guide = guide_colorbar(
+      title = "Mean Salary", 
+      title.position = "top",  # Position the title at the top of the legend bar
+      title.hjust = 0.5  # Center the title horizontally
+    )) +
+  geom_text(data = top_salaries, aes(label = SalaryFormatted), color = "white", 
+            size = 5, fontface = "bold", vjust = 0) +
+  labs(title = "<b style='font-size:20pt;'>CA/WA</b> Lead for <b style='font-size:18pt;'>Architect & Scientist</b> Roles,<br><b style='font-size:20pt;'>NY</b> Leads for <b style='font-size:16pt;'>Analysts</b>", 
+       x = "", y = "") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1,face='bold', size=10),
+        plot.title = element_markdown(lineheight = 2, hjust = 1),
+        legend.position = "bottom",
+        axis.text.y = element_text(color = "black"))
+
+print(heatmap_plot)
+
+```
+
+## Conclusion
+
+- **Data Architects and Scientists lead in earnings, with CA and WA (west coast) dominating in pay across four key tech roles.**
+- **NY (east coast) tops for Management Analysts, highlighting its broad industry demand.**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
