@@ -1,0 +1,242 @@
+---
+title: "DATA 608 STORY 6-What Is The State of Food Security and Nutrition in the US"
+author: "Yina Qiao"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+## Intro
+The United Nations Food and Agriculture Organization publication, The State of Food Security and Nutrition in the World 2022 (https://www.fao.org/documents/card/en/c/cc0639en) might lead one to the conclusion that it's an elsewhere problem. That the people who are suffering malnutrition and starvation are "elsewhere", not in our backyard. For this assignment you will need to take a closer look here at home (the US)
+Notes:
+You will need to locate and source data that reflects food security and nutrition by state broken down by men, women, children and by age groups
+
+Your analysis should demonstrate correlations that exist between level of poverty and food insecurity, malnutrition and starvation.
+
+Your data and analysis should also indicate what happens to the children as they mature into adults. Will they become fully functional citizens or will they require continued support?
+
+You data visualizations need to tell the story for a political audience that you were lobbying to address the issue of food insecurity in the US
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(dplyr)
+library(maps)
+library(ggplot2)
+library(ggtext)
+```
+
+## Data Prep
+
+```{r, eco=FALSE, results='hide'}
+# Load the data directly from the GitHub repository
+url <- "https://github.com/yinaS1234/data-608/blob/main/S6/c1.csv?raw=true"
+url2 <- "https://github.com/yinaS1234/data-608/blob/main/S6/c2.csv?raw=true"
+data <- read.csv(url, stringsAsFactors = FALSE)
+cd <- read.csv(url2, stringsAsFactors = FALSE)
+
+# Ensure the state abbreviations are in a column for mapping
+data$State <- state.abb[match(data$state, state.name)]
+data$State <- ifelse(is.na(data$State), "DC", data$State)
+
+print(data)
+head(cd)
+# Rename the columns
+cd <- cd %>%
+  rename(
+    Poverty_Rate_overall_2021 = PCTPOVALL_2021,
+    Poverty_Rate_under17_2021 = PCTPOV017_2021,
+    Poverty_Rate_5to17_2021 = PCTPOV517_2021,
+    Poverty_Rate_under4_2021 = PCTPOV04_2021,
+    Median_Inc_2021 = MEDHHINC_2021,
+    SeniorFoodInsecurityRate = `SeniorFoodInsecurityRate.StateofSeniorHunger.`,
+    OlderAdultFoodInsecurityRate = `OlderAdultFoodInsecurityRate.StateofSeniorHunger.`
+  )
+
+# Calculate the mean food insecurity rate for each category across all years
+mean_rate_children <- mean(cd$ChildFoodInsecurityRate, na.rm = TRUE)
+mean_rate_older_adults <- mean(cd$OlderAdultFoodInsecurityRate, na.rm = TRUE)
+mean_rate_seniors <- mean(cd$SeniorFoodInsecurityRate, na.rm = TRUE)
+
+# Prepare data for plotting
+categories <- c('Children', 'Older Adults', 'Seniors')
+mean_rates <- c(mean_rate_children, mean_rate_older_adults, mean_rate_seniors)
+
+```
+
+## Data Visuals
+<br><br>
+
+### Poverty~Food Insecurity
+
+<br><br><br><br><br><br><br><br><br><br>
+
+
+```{r, fig.width=13, fig.height=10, echo=FALSE,message=FALSE, warning=FALSE}
+
+p <- ggplot(data, aes(x = poverty_rate, y = food_insecurity_prevalence)) +
+  geom_point(alpha = 0.5, color = "purple", size=4) + 
+  geom_smooth(method = "loess", color = "black", size=1.5, se = FALSE) +  # LOESS fit line
+  labs(title = "<b><span style='font-size: 55px;'>Address Poverty</span></b> <br> <br>↑ Poverty  →   ↑ Food Insecurity",
+       x = "Poverty Rate(%)",  
+    y = "Food Insecurity Rate(%)") +
+  theme_minimal() +  # Use a minimal theme
+  theme(plot.title = element_markdown(size = 25, face = "bold",  color = "black"), axis.title.x=element_text(size=20,face='bold'), axis.title.y=element_text(size=20,face='bold'), axis.text.x = element_text(size=16,face='bold'), axis.text.y = element_text(size=17,face='bold'))  
+# Print the plot
+print(p)
+#→ 
+```
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+
+###  Age
+
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+```{r, fig.width=13, fig.height=9.5,echo=FALSE, warning=FALSE}
+
+
+# Plot
+p <- ggplot(data = data.frame(Category = categories, MeanRate = mean_rates*100), aes(x = Category, y = MeanRate, fill = Category)) +
+  geom_bar(stat = "identity", show.legend = FALSE, color = "black", size = 1.5) +
+  scale_fill_manual(values = c('purple', 'lightgrey', 'lightyellow')) +
+  labs(title = "<b><span style='font-size: 55px;'>Prioritize Children</span></b><br> <br> Food Insecurity  ↓ From Childhood → Adulthood", y = 'Food Insecurity Rate(%)', x = '') +
+  theme_minimal() +
+  theme(
+    plot.title = element_markdown(size = 25, face = "bold", margin = margin(b = 25, unit = "pt")),
+    axis.text.x = element_text(  size=20, face='bold'),
+    axis.title.y = element_text(size=20, face='bold'),
+    axis.text.y = element_text(size=17, face='bold'),
+    panel.grid.major = element_blank()
+  )+
+  geom_curve(aes(x = 1.0, y = 15, xend = 2.1, yend = 11), curvature = -0.3, arrow = arrow(length = unit(0.02, "npc")), color = "black") +
+  geom_curve(aes(x = 2.1, y = 11, xend = 3.0, yend = 7), curvature = -0.3, arrow = arrow(length = unit(0.02, "npc")), color = "black")
+
+
+# Print the plot
+print(p)
+
+
+```
+
+
+
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+
+### Geographic
+
+```{r, fig.width=13, fig.height=8, echo=FALSE,message=FALSE, warning=FALSE}
+
+food_insecurity_map <- plot_geo(data, locations = ~State, text = ~State, z = ~food_insecurity_prevalence) %>%
+  add_trace(
+    type = "choropleth",
+    colors = "Purples",
+    locationmode = "USA-states",
+    hovertemplate = 'State: %{location}<br>Food Insecurity Rate: %{z}<extra></extra>'
+  ) %>%
+  colorbar(
+    title = "<b><span style='font-size: 14px;'>Food Insecurity Rate(%)</span></b>",
+    len = 0.3,  # Length of the colorbar
+    x = 0.6,  # X position of the colorbar
+    y = -0.1,  # Y position of the colorbar
+    xanchor = "left",
+    yanchor = "bottom",
+    titleside = "bottom",
+    ticktext = c("Lower", "Higher"),
+    tickvals = c(min(data$food_insecurity_prevalence, na.rm = TRUE), max(data$food_insecurity_prevalence, na.rm = TRUE)),
+    orientation = "h"  # Horizontal orientation
+  ) %>%
+  layout(
+    geo = list(
+      scope = "usa",
+      projection = list(type = "albers usa"),
+      showlakes = TRUE,
+      lakecolor = toRGB("white")
+    )
+  )
+
+# Poverty Rate Map
+poverty_rate_map <- plot_geo(data, locations = ~State, text = ~State, z = ~poverty_rate) %>%
+  add_trace(
+    type = "choropleth",
+    colors = "Purples",
+    locationmode = "USA-states",
+    hovertemplate = 'State: %{location}<br>Poverty Rate: %{z}<extra></extra>'
+  ) %>%
+  colorbar(
+    title = "<b><span style='font-size: 14px;'>Poverty Rate(%)</span></b>",
+    len = 0.3,  # Length of the colorbar
+    x = 0.05,  # X position of the colorbar, adjusted to be on the right side
+    y = -0.1,  # Y position of the colorbar
+    xanchor = "left",
+    yanchor = "bottom",
+    titleside = "bottom",
+    ticktext = c("Lower", "Higher"),
+    tickvals = c(min(data$poverty_rate, na.rm = TRUE), max(data$poverty_rate, na.rm = TRUE)),
+    orientation = "h"  # Horizontal orientation
+  ) %>%
+  layout(
+    geo = list(
+      scope = "usa",
+      projection = list(type = "albers usa"),
+      showlakes = TRUE,
+      lakecolor = toRGB("white")
+    )
+  )
+
+# Combine the figures side by side
+fig <-subplot(poverty_rate_map,food_insecurity_map, nrows = 1, titleX = TRUE) %>%
+  layout(
+    title = "<b><span style='font-size: 30px;'> Target Interventions in South</span></b>",
+    margin = list(t = 100),  # Top margin for title space
+    width = 900,  # Graph width
+    height = 650  # Graph height
+  )
+
+fig <- fig %>%
+  layout(
+    shapes = list(
+      list(
+        type = "path",
+        path = "M 0.3,0.3 Q 0.5,0.1 0.8,0.3",
+        line = list(color = "black", width = 2.5),
+        xref = "paper", yref = "paper")),
+    annotations = list(
+      list(
+        text = "South Needs ↑ Support",
+        x = 0.5, y = 0.1,
+        xref = "paper", yref = "paper",
+        showarrow = FALSE,
+        font = list(size = 19, color = "black"),
+        align = "center"
+      )
+    ))
+fig
+```
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+## Conclusion
+<br><br><br>
+
+#### The overall message for policymakers is the need to address poverty, targeted interventions in the South, and prioritizing children.
+
+<br><br><br><br><br><br>
+
+Reference:
+
+https://www.ers.usda.gov/topics/food-nutrition-assistance/food-security-in-the-u-s/key-statistics-graphics/
+
+https://worldpopulationreview.com/state-rankings/poverty-rate-by-state
+
+https://www.feedingamerica.org/research/map-the-meal-gap/by-county
+
