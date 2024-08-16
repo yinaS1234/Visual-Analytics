@@ -7,7 +7,7 @@ Master the art of storytelling through data! This repository showcases high-qual
 ### Climate Change Impact Visualization
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climate.png)
 
-### Geographic Data Representation
+### US Mineral Reliance Analysis
 ![Map](https://github.com/yinaS1234/Visual-Analytics/blob/main/map.png)
 
 ### Poverty and Income Disparity Analysis
