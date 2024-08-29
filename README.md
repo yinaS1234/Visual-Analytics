@@ -4,14 +4,17 @@ Master the art of storytelling through data! This repository showcases high-qual
 
 ## Featured Visualizations Created with Code
 
-### Climate Change Impact Visualization
+### What Is The Effect of The Earth’s Temperature On Cyclonic Storms?
+Climate Change Impact Visualization
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climate.png)
 
 ### Has Fet Met its Dual Mandate given to it by Congress?
 ![Quardrant Chart](https://github.com/yinaS1234/Visual-Presentation/blob/main/s2/quardrant.png)
 
-### US Mineral Reliance Analysis
+### Where Do Strategic Minerals Come From?
+US Mineral Reliance Analysis
 ![Map](https://github.com/yinaS1234/Visual-Analytics/blob/main/map.png)
 
-### Poverty and Income Disparity Analysis
+### What Is The State of Food Security and Nutritionin the US?
+Poverty and Income Disparity Analysis
 ![Poverty Analysis](https://github.com/yinaS1234/Visual-Analytics/blob/main/poverty.png)
