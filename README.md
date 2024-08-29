@@ -8,7 +8,7 @@ Master the art of storytelling through data! This repository showcases high-qual
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climate.png)
 
 ### Has Fet Met its Dual Mandate given to it by Congress?
-! [Quardrant Chart](https://github.com/yinaS1234/Visual-Presentation/blob/main/s2/quardrant.png)
+![Quardrant Chart](https://github.com/yinaS1234/Visual-Presentation/blob/main/s2/quardrant.png)
 
 ### US Mineral Reliance Analysis
 ![Map](https://github.com/yinaS1234/Visual-Analytics/blob/main/map.png)
