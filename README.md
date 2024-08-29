@@ -7,6 +7,9 @@ Master the art of storytelling through data! This repository showcases high-qual
 ### Climate Change Impact Visualization
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climate.png)
 
+### Has Fet Met its Dual Mandate given to it by Congress?
+
+
 ### US Mineral Reliance Analysis
 ![Map](https://github.com/yinaS1234/Visual-Analytics/blob/main/map.png)
 
