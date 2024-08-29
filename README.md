@@ -1,6 +1,6 @@
 # Visual-Analytics
 
-The ability to communicate analysis results and conclusions using high quality data visualizations is a important skills in business environment.
+The ability to communicate analysis results and conclusions using high quality data visualizations is an important skills in business environment.
 This repository showcases high-quality data visualizations crafted to uncover the hidden stories within data. Explore projects that emphasize the importance of audience context, the critical eye for quality, and the techniques that transform data into compelling narratives. 
 
 ## Featured Visualizations Created with Code
