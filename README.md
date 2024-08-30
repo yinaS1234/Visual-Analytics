@@ -6,7 +6,7 @@ This repository showcases high-quality data visualizations crafted to uncover th
 ## Featured Visualizations Created with Code
 
 ### What Is The Effect of The Earth’s Temperature On Cyclonic Storms?
-Climate Change Impact Visualization
+
 "Rising Temperatures Fueling Stronger, More Frequent Storms"
 "Small Temperature Shifts, Major Storm Impact"
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climates.png)
