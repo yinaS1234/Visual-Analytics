@@ -7,7 +7,7 @@ This repository showcases high-quality data visualizations crafted to uncover th
 
 ### What Is The Effect of The Earth’s Temperature On Cyclonic Storms?
 Climate Change Impact Visualization
-![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climate.png)
+![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climates.png)
 
 ### Has Fet Met its Dual Mandate given to it by Congress?
 ![Quardrant Chart](https://github.com/yinaS1234/Visual-Presentation/blob/main/s2/quardrant.png)
