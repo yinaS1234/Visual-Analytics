@@ -7,6 +7,8 @@ This repository showcases high-quality data visualizations crafted to uncover th
 
 ### What Is The Effect of The Earth’s Temperature On Cyclonic Storms?
 Climate Change Impact Visualization
+"Rising Temperatures Fueling Stronger, More Frequent Storms"
+"Small Temperature Shifts, Major Storm Impact"
 ![Climate Change](https://github.com/yinaS1234/Visual-Analytics/blob/main/climates.png)
 
 ### Has Fet Met its Dual Mandate given to it by Congress?
